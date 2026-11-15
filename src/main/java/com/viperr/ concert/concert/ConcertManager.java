@@ -451,4 +451,142 @@ public class ConcertManager {
                 Blocks.WHITE_STAINED_GLASS,
                 Blocks.LIGHT_BLUE_STAINED_GLASS
         };
-        Block chosenColor = laserColors[RANDOM.nextInt(laserColors.length)
+                Block chosenColor = laserColors[RANDOM.nextInt(laserColors.length)];
+        for (BlockPos glassPos : beaconGlassPositions) {
+            level.setBlockAndUpdate(glassPos, chosenColor.defaultBlockState());
+        }
+    }
+
+    private static void launchStageFirework(ServerLevel level, BlockPos center, int hypeLevel) {
+        int[] sideX = {-15, 15, -3, 3, -10, 10};
+        int fx = sideX[RANDOM.nextInt(sideX.length)];
+        int fz = RANDOM.nextBoolean() ? 10 : -11;
+
+        ItemStack fireworkStack = new ItemStack(Items.FIREWORK_ROCKET);
+        CompoundTag fireworksTag = fireworkStack.getOrCreateTagElement("Fireworks");
+        fireworksTag.putByte("Flight", (byte) (1 + RANDOM.nextInt(2)));
+
+        ListTag explosions = new ListTag();
+        CompoundTag explosion = new CompoundTag();
+        explosion.putByte("Type", (byte) (hypeLevel == 3 ? 1 : 0));
+        explosion.putBoolean("Flicker", true);
+        explosion.putBoolean("Trail", true);
+
+        int[] colors = {0xB026FF, 0xFF007F, 0xFFFFFF, 0x00F0FF};
+        explosion.putIntArray("Colors", new int[]{colors[RANDOM.nextInt(colors.length)], colors[RANDOM.nextInt(colors.length)]});
+        explosions.add(explosion);
+        fireworksTag.put("Explosions", explosions);
+
+        FireworkRocketEntity rocket = new FireworkRocketEntity(
+                level,
+                center.getX() + fx + 0.5,
+                center.getY() + 2.0,
+                center.getZ() + fz + 0.5,
+                fireworkStack
+        );
+        level.addFreshEntity(rocket);
+    }
+
+    private static void spawnPerformers(ServerLevel level, BlockPos center, Vec3 viewerPos) {
+        spawnedEntities.clear();
+
+        PerformerEntity kai = ModEntities.KAI_ANGEL.get().create(level);
+        if (kai != null) {
+            kai.moveTo(center.getX() - 4.5, center.getY() + 1.0, center.getZ() - 3.0, 180.0F, 0.0F);
+            kai.lookAt(EntityAnchorArgument.Anchor.EYES, viewerPos);
+            level.addFreshEntity(kai);
+            spawnedEntities.add(kai.getUUID());
+        }
+
+        PerformerEntity mice = ModEntities.NINE_MICE.get().create(level);
+        if (mice != null) {
+            mice.moveTo(center.getX() + 5.5, center.getY() + 1.0, center.getZ() - 3.0, 180.0F, 0.0F);
+            mice.lookAt(EntityAnchorArgument.Anchor.EYES, viewerPos);
+            level.addFreshEntity(mice);
+            spawnedEntities.add(mice.getUUID());
+        }
+    }
+
+    private static void spawnMoshpitCrowd(ServerLevel level, BlockPos center) {
+        crowdEntities.clear();
+        VillagerType[] styles = {
+                VillagerType.PLAINS, VillagerType.SNOW, VillagerType.TAIGA,
+                VillagerType.SAVANNA, VillagerType.DESERT, VillagerType.JUNGLE
+        };
+
+        Vec3 stageTarget = new Vec3(center.getX() + 0.5, center.getY() + 3.5, center.getZ());
+
+        int spawned = 0;
+        for (int attempt = 0; attempt < 130 && spawned < 55; attempt++) {
+            int offsetX = -15 + RANDOM.nextInt(31);
+            if (Math.abs(offsetX) <= 4) {
+                offsetX += (offsetX >= 0 ? 5 : -5);
+            }
+            int offsetZ = -26 + RANDOM.nextInt(13);
+
+            BlockPos fanPos = center.offset(offsetX, 0, offsetZ);
+            Mob fan;
+            if (RANDOM.nextInt(4) == 0) {
+                WitherSkeleton skel = EntityType.WITHER_SKELETON.create(level);
+                if (skel != null) {
+                    skel.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.NETHERITE_CHESTPLATE));
+                    skel.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.NETHERITE_LEGGINGS));
+                }
+                fan = skel;
+            } else {
+                Villager villager = EntityType.VILLAGER.create(level);
+                if (villager != null) {
+                    villager.setVillagerData(villager.getVillagerData().setType(styles[RANDOM.nextInt(styles.length)]));
+                }
+                fan = villager;
+            }
+
+            if (fan != null) {
+                fan.setNoAi(true);
+                fan.setInvulnerable(true);
+                fan.moveTo(fanPos.getX() + 0.5, fanPos.getY() + 1.0, fanPos.getZ() + 0.5, 0.0F, 0.0F);
+                fan.lookAt(EntityAnchorArgument.Anchor.EYES, stageTarget);
+                level.addFreshEntity(fan);
+                crowdEntities.add(fan.getUUID());
+                spawned++;
+            }
+        }
+    }
+
+    private static void spawnAmbientCreatures(ServerLevel level, BlockPos center) {
+        ambientEntities.clear();
+        for (int i = 0; i < 8; i++) {
+            GlowSquid squid = EntityType.GLOW_SQUID.create(level);
+            if (squid != null) {
+                squid.setNoGravity(true);
+                squid.setNoAi(true);
+                squid.setInvulnerable(true);
+                double sx = center.getX() - 12 + RANDOM.nextInt(25);
+                double sy = center.getY() + 10 + RANDOM.nextInt(5);
+                double sz = center.getZ() - 15 + RANDOM.nextInt(22);
+                squid.moveTo(sx, sy, sz, RANDOM.nextFloat() * 360.0F, 0.0F);
+                level.addFreshEntity(squid);
+                ambientEntities.add(squid.getUUID());
+            }
+        }
+    }
+
+    private static void spawnArenaParticles(ServerLevel level, BlockPos center, int hypeLevel) {
+        ParticleOptions mainParticle = hypeLevel == 3 ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.FLAME;
+        int count = hypeLevel * 10;
+
+        int[] pyroX = {-12, -8, -4, 4, 8, 12};
+        for (int px : pyroX) {
+            level.sendParticles(mainParticle, center.getX() + px + 0.5, center.getY() + 2.1, center.getZ() - 10.5, count, 0.2, 1.4, 0.2, 0.07);
+            level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, center.getX() + px + 0.5, center.getY() + 1.5, center.getZ() - 10.5, 3, 0.6, 0.3, 0.6, 0.02);
+        }
+
+        level.sendParticles(ParticleTypes.DRAGON_BREATH, center.getX() - 3.5, center.getY() + 1.2, center.getZ() - 17.0, 12, 0.3, 0.5, 4.0, 0.03);
+        level.sendParticles(ParticleTypes.DRAGON_BREATH, center.getX() + 3.5, center.getY() + 1.2, center.getZ() - 17.0, 12, 0.3, 0.5, 4.0, 0.03);
+
+        level.sendParticles(ParticleTypes.END_ROD, center.getX() + 0.5, center.getY() + 13.0, center.getZ() - 4.0, 26, 14.0, 1.5, 11.0, 0.04);
+        if (hypeLevel >= 2) {
+            level.sendParticles(ParticleTypes.FIREWORK, center.getX() + 0.5, center.getY() + 10.0, center.getZ() - 6.0, 30, 13.0, 3.0, 10.0, 0.08);
+        }
+    }
+}
