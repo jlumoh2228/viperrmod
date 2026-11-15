@@ -23,7 +23,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.animal.GlowSquid;
+import net.minecraft.world.entity.GlowSquid;
 import net.minecraft.world.entity.monster.WitherSkeleton;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.npc.VillagerType;
