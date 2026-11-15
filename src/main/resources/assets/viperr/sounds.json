@@ -1,0 +1,11 @@
+{
+  "heavy_metal_2_concert": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "viperr:heavy_metal_2_concert",
+        "stream": true
+      }
+    ]
+  }
+}
